@@ -8,6 +8,7 @@
 #include<map>
 #include<sstream>
 #include<cmath>
+#include<getopt.h>
 
 #define __DEBUG
 
@@ -57,7 +58,7 @@ class LDASolver{
             }
         }
         this->word_count = index;
-        debug("Total words:%d\n",word_count);
+//        debug("Total words:%d\n",word_count);
         return result;
     }
 
@@ -82,9 +83,6 @@ class LDASolver{
             }
         }
 
-        //DEBUG
-        for(int i=0;i<topic_count;i++)
-            debug("Sigma_topic %d:%d\n",i,sigma_topic_count[i]);
     }
 
 public:
@@ -153,21 +151,23 @@ public:
 
     }
     void output(){
+        /*
         freopen("output.txt","w",stdout);
         for(int i=0;i<document_count;i++){
             for(int j=0;j<words[i].size();j++)
                 printf("%s:%d ",word_str[words[i][j]].c_str(),topic_for_word[i][j]);
             printf("\n");
         }
-
+*/
 
         freopen("topic.txt","w",stdout);
         for(int i=0;i<topic_count;i++){
-            printf("---------topic %d--------------\n",i);
+            printf("Topic %d:\n",i);
             map<double,string> words;
             for(int t=0;t<word_count;t++)
                 words[-get_phi(i,t)] = word_str[t];
             int count = 0;
+            //Select the top 20 results.
             for(auto iter=words.begin();iter != words.end();iter++){
                 printf("%s : %f\n",iter->second.c_str(),-iter->first);
                 count++;
@@ -236,12 +236,28 @@ private:
 };
 
 
-int main(){
+int main(int argc,char **argv){
+
+    struct option long_options[] = {
+        {"k", required_argument, 0 ,0},
+        {0,0,0,0}
+    };
+
+    int topic_count = 3;
+
+    int option_index;
+    int c = getopt_long(argc,argv,"k:",long_options,&option_index);
+
+    if(c == -1){
+        fprintf(stderr,"You need to input the topic count by -k\n");
+        return -1;
+    }
+    else
+        topic_count = atoi(optarg);
 
     srand(time(0));
 
     freopen("data.txt","r",stdin);
-    int topic_count = 3;
     int document_count;
     scanf("%d",&document_count);
 
@@ -253,12 +269,11 @@ int main(){
         string word;
         while(ss>>word)
             documents[i].push_back(word);
-
     }
 
     LDASolver *solver = new LDASolver(document_count,documents,topic_count);
 
-    solver->solve(0.1,0.01);
+    solver->solve(2.0/topic_count,0.01);
 
     solver->output();
     return 0;
